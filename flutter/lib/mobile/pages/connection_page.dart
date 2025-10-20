@@ -73,7 +73,7 @@ class _ConnectionPageState extends State<ConnectionPage> {
           });
         }
         //如果已连接过，则直接连接
-        if(lastRemoteId){
+        if(lastRemoteId.isNotEmpty){
           onConnect();
         }
       });
