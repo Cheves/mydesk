@@ -99,6 +99,15 @@ class _ViewCameraPageState extends State<ViewCameraPage>
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
       gFFI.dialogManager
           .showLoading(translate('Connecting...'), onCancel: closeConnection);
+      
+      //自动拨号
+      final isInVoice = [
+        VoiceCallStatus.waitingForResponse,
+        VoiceCallStatus.connected
+      ].contains(gFFI.chatModel.voiceCallStatus.value);
+      if (!isInVoice) {
+        onPressVoiceCall() => bind.sessionRequestVoiceCall(sessionId: sessionId);
+      }
     });
     if (!isWeb) {
       WakelockPlus.enable();
