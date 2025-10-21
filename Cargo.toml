@@ -1,10 +1,10 @@
 [package]
-name = "horizon"
+name = "rustdesk"
 version = "1.4.3"
-authors = ["horizon <info@horizon.com>"]
+authors = ["rustdesk <info@rustdesk.com>"]
 edition = "2021"
 build= "build.rs"
-description = "Horizon Remote Desktop"
+description = "RustDesk Remote Desktop"
 default-run = "rustdesk"
 rust-version = "1.75"
 
