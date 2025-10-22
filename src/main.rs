@@ -5,6 +5,11 @@
 
 use librustdesk::*;
 
+{
+    let mut app_name = hbb_common::config::APP_NAME.write().unwrap();
+    *app_name = "Horizon".to_string();
+}
+
 #[cfg(any(target_os = "android", target_os = "ios", feature = "flutter"))]
 fn main() {
     if !common::global_init() {
