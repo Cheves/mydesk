@@ -26,10 +26,6 @@ fn main() {
     if !common::global_init() {
         return;
     }
-    {
-        let mut app_name = hbb_common::config::APP_NAME.write().unwrap();
-        *app_name = "Horizon".to_string();
-    }
     #[cfg(all(windows, not(feature = "inline")))]
     unsafe {
         winapi::um::shellscalingapi::SetProcessDpiAwareness(2);
