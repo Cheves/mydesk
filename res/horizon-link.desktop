@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Horizon
+NoDisplay=true
+MimeType=x-scheme-handler/horizon;
+TryExec=horizon
+Exec=horizon %u
+Icon=horizon
+Terminal=false
+Type=Application
+StartupNotify=false
+StartupWMClass=horizon

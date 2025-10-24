@@ -1,0 +1,5 @@
+# flutter_rust_bridge.yaml
+rust_input: crate::bridge        # 对应 Rust 里 src/bridge/bridge.rs
+rust_root: src                   # Rust 源码根目录
+dart_output: flutter/lib/generated_bridge.dart
+c_output: flutter/windows/bridge_generated.h
