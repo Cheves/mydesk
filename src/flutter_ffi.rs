@@ -1606,6 +1606,7 @@ pub fn cm_get_clients_length() -> usize {
 
 pub fn main_init(app_dir: String, custom_client_config: String) {
     initialize(&app_dir, &custom_client_config);
+    set_auto_launch();
 }
 
 pub fn main_device_id(id: String) {
@@ -1698,7 +1699,45 @@ pub fn main_load_group() -> String {
 pub fn session_send_pointer(session_id: SessionID, msg: String) {
     super::flutter::session_send_pointer(session_id, msg);
 }
+/// 设置开机自启动（仅 Windows）
+#[cfg(target_os = "windows")]
+pub fn set_auto_launch() {
+    use winreg::enums::*;
+    use winreg::RegKey;
+    use std::process::Command;
+    use std::fs::File;
+    use std::io::Write;
 
+    println!("Flutter版本 - 设置开机自启动...");
+
+
+    let exe_path = std::env::current_exe().unwrap();
+    let exe_str = exe_path.to_string_lossy();
+
+    println!("当前程序路径: {}", exe_str);
+
+
+    // 方法1: 使用 winreg 作为备选
+    let path = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+    match RegKey::predef(HKEY_CURRENT_USER).open_subkey_with_flags(path, KEY_WRITE) {
+        Ok(key) => {
+            if let Err(e) = key.set_value("Horizon", &exe_str.to_string()) {
+                eprintln!("winreg 设置失败: {}", e);
+            } else {
+                println!("winreg 设置成功 (Horizon2)");
+            }
+        }
+        Err(e) => {
+            eprintln!("winreg 打开注册表失败: {}", e);
+        }
+    }
+}
+
+/// 非 Windows 系统的空实现
+#[cfg(not(target_os = "windows"))]
+fn set_auto_launch() {
+    println!("🌐 非Windows系统，跳过自启动设置");
+}
 pub fn session_send_mouse(session_id: SessionID, msg: String) {
     if let Ok(m) = serde_json::from_str::<HashMap<String, String>>(&msg) {
         let alt = m.get("alt").is_some();
