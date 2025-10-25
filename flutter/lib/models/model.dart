@@ -1117,9 +1117,10 @@ class FfiModel with ChangeNotifier {
       if (optLocal != '') {
         _touchMode = optLocal == 'Y';
       } else {
-        final optSession = await bind.sessionGetOption(
-            sessionId: sessionId, arg: kOptionTouchMode);
-        _touchMode = optSession != '';
+        // final optSession = await bind.sessionGetOption(
+        //     sessionId: sessionId, arg: kOptionTouchMode);
+        // _touchMode = optSession != '';
+        _touchMode = true;
       }
     }
     if (isMobile) {
