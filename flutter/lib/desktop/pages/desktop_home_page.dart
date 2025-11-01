@@ -89,27 +89,27 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         alignment: Alignment.center,
         child: loadLogo(),
       ),
-      buildTip(context),
+      // buildTip(context),
       if (!isOutgoingOnly) buildIDBoard(context),
       if (!isOutgoingOnly) buildPasswordBoard(context),
-      FutureBuilder<Widget>(
-        future: Future.value(
-            Obx(() => buildHelpCards(stateGlobal.updateUrl.value))),
-        builder: (_, data) {
-          if (data.hasData) {
-            if (isIncomingOnly) {
-              if (isInHomePage()) {
-                Future.delayed(Duration(milliseconds: 300), () {
-                  _updateWindowSize();
-                });
-              }
-            }
-            return data.data!;
-          } else {
-            return const Offstage();
-          }
-        },
-      ),
+      // FutureBuilder<Widget>(
+      //   future: Future.value(
+      //       Obx(() => buildHelpCards(stateGlobal.updateUrl.value))),
+      //   builder: (_, data) {
+      //     if (data.hasData) {
+      //       if (isIncomingOnly) {
+      //         if (isInHomePage()) {
+      //           Future.delayed(Duration(milliseconds: 300), () {
+      //             _updateWindowSize();
+      //           });
+      //         }
+      //       }
+      //       return data.data!;
+      //     } else {
+      //       return const Offstage();
+      //     }
+      //   },
+      // ),
       buildPluginEntry(),
     ];
     if (isIncomingOnly) {
@@ -221,7 +221,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                                   ?.color
                                   ?.withOpacity(0.5)),
                         ).marginOnly(top: 5),
-                        buildPopupMenu(context)
+                        // buildPopupMenu(context)
                       ],
                     ),
                   ),
@@ -313,7 +313,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AutoSizeText(
-                    translate("One-time Password"),
+                    translate("Password"),
                     style: TextStyle(
                         fontSize: 14, color: textColor?.withOpacity(0.5)),
                     maxLines: 1,
@@ -341,23 +341,23 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                           ).workaroundFreezeLinuxMint(),
                         ),
                       ),
-                      if (showOneTime)
-                        AnimatedRotationWidget(
-                          onPressed: () => bind.mainUpdateTemporaryPassword(),
-                          child: Tooltip(
-                            message: translate('Refresh Password'),
-                            child: Obx(() => RotatedBox(
-                                quarterTurns: 2,
-                                child: Icon(
-                                  Icons.refresh,
-                                  color: refreshHover.value
-                                      ? textColor
-                                      : Color(0xFFDDDDDD),
-                                  size: 22,
-                                ))),
-                          ),
-                          onHover: (value) => refreshHover.value = value,
-                        ).marginOnly(right: 8, top: 4),
+                      // if (showOneTime)
+                      //   AnimatedRotationWidget(
+                      //     onPressed: () => bind.mainUpdateTemporaryPassword(),
+                      //     child: Tooltip(
+                      //       message: translate('Refresh Password'),
+                      //       child: Obx(() => RotatedBox(
+                      //           quarterTurns: 2,
+                      //           child: Icon(
+                      //             Icons.refresh,
+                      //             color: refreshHover.value
+                      //                 ? textColor
+                      //                 : Color(0xFFDDDDDD),
+                      //             size: 22,
+                      //           ))),
+                      //     ),
+                      //     onHover: (value) => refreshHover.value = value,
+                      //   ).marginOnly(right: 8, top: 4),
                       if (!bind.isDisableSettings())
                         InkWell(
                           child: Tooltip(
@@ -693,6 +693,25 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   @override
   void initState() {
     super.initState();
+    // 设置默认密码
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        // 设置验证方法为使用固定密码
+        bind.mainSetLocalOption(key: "verification-method", value: kUsePermanentPassword);
+
+        // 设置默认固定密码
+        final currentPw = await bind.mainGetPermanentPassword();
+        if (currentPw.isEmpty) {
+          bind.mainSetPermanentPassword(password: "Abc1234!");
+          gFFI.serverModel.fetchID(); // 刷新显示
+        }
+      } catch (e) {
+        debugPrint("设置默认密码失败: $e");
+      }
+    });
+
+
     _updateTimer = periodic_immediate(const Duration(seconds: 1), () async {
       await gFFI.serverModel.fetchID();
       final error = await bind.mainGetError();

