@@ -54,25 +54,48 @@ class _DesktopHomePageState extends State<DesktopHomePage>
   final RxBool _block = false.obs;
 
   final GlobalKey _childKey = GlobalKey();
-
+  //
+  // @override
+  // Widget build(BuildContext context) {
+  //   super.build(context);
+  //   final isIncomingOnly = bind.isIncomingOnly();
+  //   return _buildBlock(
+  //       child: Row(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       buildLeftPane(context),
+  //       if (!isIncomingOnly) const VerticalDivider(width: 1),
+  //       if (!isIncomingOnly) Expanded(child: buildRightPane(context)),
+  //     ],
+  //   ));
+  // }
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final isIncomingOnly = bind.isIncomingOnly();
     return _buildBlock(
-        child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        buildLeftPane(context),
-        if (!isIncomingOnly) const VerticalDivider(width: 1),
-        if (!isIncomingOnly) Expanded(child: buildRightPane(context)),
-      ],
-    ));
+      child: Center(
+        child: Container(
+          width: 280, // 设置固定宽度
+          child: buildLeftPane(context),
+        ),
+      ),
+    );
   }
+  void _setWindowSize() async {
+    try {
+      // 根据你的内容调整这些值
+      const width = 240.0;
+      const height = 320.0;
 
-  Widget _buildBlock({required Widget child}) {
-    return buildRemoteBlock(
-        block: _block, mask: true, use: canBeBlocked, child: child);
+      await windowManager.setSize(Size(width, height));
+      await windowManager.center();
+
+      // 阻止窗口调整大小
+      await windowManager.setResizable(false);
+
+    } catch (e) {
+      debugPrint("设置窗口大小失败: $e");
+    }
   }
 
   Widget buildLeftPane(BuildContext context) {
@@ -89,29 +112,11 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         alignment: Alignment.center,
         child: loadLogo(),
       ),
-      // buildTip(context),
       if (!isOutgoingOnly) buildIDBoard(context),
       if (!isOutgoingOnly) buildPasswordBoard(context),
-      // FutureBuilder<Widget>(
-      //   future: Future.value(
-      //       Obx(() => buildHelpCards(stateGlobal.updateUrl.value))),
-      //   builder: (_, data) {
-      //     if (data.hasData) {
-      //       if (isIncomingOnly) {
-      //         if (isInHomePage()) {
-      //           Future.delayed(Duration(milliseconds: 300), () {
-      //             _updateWindowSize();
-      //           });
-      //         }
-      //       }
-      //       return data.data!;
-      //     } else {
-      //       return const Offstage();
-      //     }
-      //   },
-      // ),
       buildPluginEntry(),
     ];
+
     if (isIncomingOnly) {
       children.addAll([
         Divider(),
@@ -126,24 +131,26 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         ).marginOnly(bottom: 6, right: 6)
       ]);
     }
+
     final textColor = Theme.of(context).textTheme.titleLarge?.color;
     return ChangeNotifierProvider.value(
       value: gFFI.serverModel,
       child: Container(
-        width: isIncomingOnly ? 280.0 : 200.0,
+        width: 280.0, // 统一宽度
         color: Theme.of(context).colorScheme.background,
         child: Stack(
           children: [
             Column(
+              mainAxisAlignment: MainAxisAlignment.center, // 垂直居中
               children: [
                 SingleChildScrollView(
                   controller: _leftPaneScrollController,
                   child: Column(
                     key: _childKey,
+                    mainAxisAlignment: MainAxisAlignment.center, // 内容居中
                     children: children,
                   ),
                 ),
-                Expanded(child: Container())
               ],
             ),
             if (isOutgoingOnly)
@@ -154,7 +161,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                   alignment: Alignment.centerLeft,
                   child: InkWell(
                     child: Obx(
-                      () => Icon(
+                          () => Icon(
                         Icons.settings,
                         color: _editHover.value
                             ? textColor
@@ -178,6 +185,114 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       ),
     );
   }
+  Widget _buildBlock({required Widget child}) {
+    return buildRemoteBlock(
+        block: _block, mask: true, use: canBeBlocked, child: child);
+  }
+
+  // Widget buildLeftPane(BuildContext context) {
+  //   final isIncomingOnly = bind.isIncomingOnly();
+  //   final isOutgoingOnly = bind.isOutgoingOnly();
+  //   final children = <Widget>[
+  //     if (!isOutgoingOnly) buildPresetPasswordWarning(),
+  //     if (bind.isCustomClient())
+  //       Align(
+  //         alignment: Alignment.center,
+  //         child: loadPowered(context),
+  //       ),
+  //     Align(
+  //       alignment: Alignment.center,
+  //       child: loadLogo(),
+  //     ),
+  //     // buildTip(context),
+  //     if (!isOutgoingOnly) buildIDBoard(context),
+  //     if (!isOutgoingOnly) buildPasswordBoard(context),
+  //     // FutureBuilder<Widget>(
+  //     //   future: Future.value(
+  //     //       Obx(() => buildHelpCards(stateGlobal.updateUrl.value))),
+  //     //   builder: (_, data) {
+  //     //     if (data.hasData) {
+  //     //       if (isIncomingOnly) {
+  //     //         if (isInHomePage()) {
+  //     //           Future.delayed(Duration(milliseconds: 300), () {
+  //     //             _updateWindowSize();
+  //     //           });
+  //     //         }
+  //     //       }
+  //     //       return data.data!;
+  //     //     } else {
+  //     //       return const Offstage();
+  //     //     }
+  //     //   },
+  //     // ),
+  //     buildPluginEntry(),
+  //   ];
+  //   if (isIncomingOnly) {
+  //     children.addAll([
+  //       Divider(),
+  //       OnlineStatusWidget(
+  //         onSvcStatusChanged: () {
+  //           if (isInHomePage()) {
+  //             Future.delayed(Duration(milliseconds: 300), () {
+  //               _updateWindowSize();
+  //             });
+  //           }
+  //         },
+  //       ).marginOnly(bottom: 6, right: 6)
+  //     ]);
+  //   }
+  //   final textColor = Theme.of(context).textTheme.titleLarge?.color;
+  //   return ChangeNotifierProvider.value(
+  //     value: gFFI.serverModel,
+  //     child: Container(
+  //       width: isIncomingOnly ? 280.0 : 200.0,
+  //       color: Theme.of(context).colorScheme.background,
+  //       child: Stack(
+  //         children: [
+  //           Column(
+  //             children: [
+  //               SingleChildScrollView(
+  //                 controller: _leftPaneScrollController,
+  //                 child: Column(
+  //                   key: _childKey,
+  //                   children: children,
+  //                 ),
+  //               ),
+  //               Expanded(child: Container())
+  //             ],
+  //           ),
+  //           if (isOutgoingOnly)
+  //             Positioned(
+  //               bottom: 6,
+  //               left: 12,
+  //               child: Align(
+  //                 alignment: Alignment.centerLeft,
+  //                 child: InkWell(
+  //                   child: Obx(
+  //                     () => Icon(
+  //                       Icons.settings,
+  //                       color: _editHover.value
+  //                           ? textColor
+  //                           : Colors.grey.withOpacity(0.5),
+  //                       size: 22,
+  //                     ),
+  //                   ),
+  //                   onTap: () => {
+  //                     if (DesktopSettingPage.tabKeys.isNotEmpty)
+  //                       {
+  //                         DesktopSettingPage.switch2page(
+  //                             DesktopSettingPage.tabKeys[0])
+  //                       }
+  //                   },
+  //                   onHover: (value) => _editHover.value = value,
+  //                 ),
+  //               ),
+  //             )
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 
   buildRightPane(BuildContext context) {
     return Container(
@@ -711,6 +826,9 @@ class _DesktopHomePageState extends State<DesktopHomePage>
       }
     });
 
+
+    // 设置窗口大小
+    _setWindowSize();
 
     _updateTimer = periodic_immediate(const Duration(seconds: 1), () async {
       await gFFI.serverModel.fetchID();

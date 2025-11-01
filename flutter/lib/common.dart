@@ -599,16 +599,18 @@ class MyTheme {
 
   static ThemeMode currentThemeMode() {
     final preference = getThemeModePreference();
-    if (preference == ThemeMode.system) {
-      if (WidgetsBinding.instance.platformDispatcher.platformBrightness ==
-          Brightness.light) {
-        return ThemeMode.light;
-      } else {
-        return ThemeMode.dark;
-      }
-    } else {
-      return preference;
-    }
+    return ThemeMode.dark;
+
+    // if (preference == ThemeMode.system) {
+    //   if (WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+    //       Brightness.light) {
+    //     return ThemeMode.light;
+    //   } else {
+    //     return ThemeMode.dark;
+    //   }
+    // } else {
+    //   return preference;
+    // }
   }
 
   static ColorThemeExtension color(BuildContext context) {
