@@ -194,9 +194,9 @@ class _ViewCameraPageState extends State<ViewCameraPage>
         ),
       );
 
-  Widget _bottomWidget() => (_showBar && gFFI.ffiModel.pi.displays.isNotEmpty ? null : Offstage()); 
-      // ? getBottomAppBar()
-      // : Offstage());
+  Widget _bottomWidget() => (_showBar && gFFI.ffiModel.pi.displays.isNotEmpty
+      ? getBottomAppBar()
+      : Offstage());
 
   @override
   Widget build(BuildContext context) {
