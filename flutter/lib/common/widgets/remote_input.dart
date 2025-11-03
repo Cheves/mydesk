@@ -113,6 +113,10 @@ class _RawTouchGestureDetectorRegionState
   InputModel get inputModel => widget.inputModel;
   bool get handleTouch => (isDesktop || isWebDesktop) || ffiModel.touchMode;
   SessionID get sessionId => ffi.sessionId;
+  
+  int _tapCount = 0;
+  DateTime? _lastTapTime;
+  final int _tapTimeout = 500; // 点击超时时间（毫秒）
 
   @override
   Widget build(BuildContext context) {
@@ -155,6 +159,26 @@ class _RawTouchGestureDetectorRegionState
       return;
     }
     if (handleTouch) {
+      //判断连续点击事件
+      final now = DateTime.now();
+      // 检查是否在超时时间内
+      if (_lastTapTime != null &&
+          now.difference(_lastTapTime!).inMilliseconds < _tapTimeout) {
+        _tapCount++;
+      } else {
+        _tapCount = 1; // 重新开始计数
+      }
+      _lastTapTime = now;
+      // 根据点击次数执行不同操作
+      if (_tapCount == 2) {
+        _scale += 0.1;
+      } else if (_tapCount == 3) {
+        _scale -= 0.1;
+      }
+      ffi.canvasModel.updateScale(_scale, d.globalPosition);
+      ffi.canvasModel.panX(d.globalPosition.dx);
+      ffi.canvasModel.panY(d.globalPosition.dy);
+      
       final isMoved =
           await ffi.cursorModel.move(d.localPosition.dx, d.localPosition.dy);
       if (isMoved) {
