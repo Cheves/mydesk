@@ -996,7 +996,7 @@ _connectDialog(
       if (passwordController == null) {
         return Offstage();
       }
-      passwordController.text='Abc123!'
+      passwordController.text='Abc1234!';
       return Column(
         children: [
           descWidget(translate('verify_rustdesk_password_tip')),
