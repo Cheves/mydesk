@@ -172,15 +172,15 @@ class _RawTouchGestureDetectorRegionState
       // 根据点击次数执行不同操作
       if (_tapCount == 2) {
         _scale += 0.1;
-        ffi.canvasModel.updateScale(_scale, d.localPosition);
-        ffi.canvasModel.panX(d.localPosition.dx);
-        ffi.canvasModel.panY(d.localPosition.dy);
+        ffi.canvasModel.updateScale(_scale, d.globalPosition);
+        // ffi.canvasModel.panX(d.localPosition.dx);
+        // ffi.canvasModel.panY(d.localPosition.dy);
         return;
       } else if (_tapCount == 3) {
         _scale -= 0.1;
-        ffi.canvasModel.updateScale(_scale, d.localPosition);
-        ffi.canvasModel.panX(d.localPosition.dx);
-        ffi.canvasModel.panY(d.localPosition.dy);
+        ffi.canvasModel.updateScale(_scale, d.globalPosition);
+        // ffi.canvasModel.panX(d.localPosition.dx);
+        // ffi.canvasModel.panY(d.localPosition.dy);
         return;
       }
       
