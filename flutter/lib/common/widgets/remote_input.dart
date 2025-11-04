@@ -159,31 +159,6 @@ class _RawTouchGestureDetectorRegionState
       return;
     }
     if (handleTouch) {
-      //判断连续点击事件
-      final now = DateTime.now();
-      // 检查是否在超时时间内
-      if (_lastTapTime != null &&
-          now.difference(_lastTapTime!).inMilliseconds < _tapTimeout) {
-        _tapCount++;
-      } else {
-        _tapCount = 1; // 重新开始计数
-      }
-      _lastTapTime = now;
-      // 根据点击次数执行不同操作
-      if (_tapCount == 2) {
-        _scale += 0.1;
-        ffi.canvasModel.updateScale(_scale, d.localPosition);
-        // ffi.canvasModel.panX(d.localPosition.dx);
-        // ffi.canvasModel.panY(d.localPosition.dy);
-        return;
-      } else if (_tapCount == 3) {
-        _scale -= 0.1;
-        ffi.canvasModel.updateScale(_scale, d.localPosition);
-        // ffi.canvasModel.panX(d.localPosition.dx);
-        // ffi.canvasModel.panY(d.localPosition.dy);
-        return;
-      }
-      
       final isMoved =
           await ffi.cursorModel.move(d.localPosition.dx, d.localPosition.dy);
       if (isMoved) {
@@ -212,6 +187,28 @@ class _RawTouchGestureDetectorRegionState
 
   onDoubleTapDown(TapDownDetails d) async {
     lastDeviceKind = d.kind;
+    //判断连续点击事件
+    final now = DateTime.now();
+    // 检查是否在超时时间内
+    if (_lastTapTime != null && now.difference(_lastTapTime!).inMilliseconds < _tapTimeout) {
+      _tapCount++;
+    } else {
+      _tapCount = 1; // 重新开始计数
+    }
+    _lastTapTime = now;
+    // 根据点击次数执行不同操作
+    if (_tapCount == 2) {
+      _scale += 0.1;
+      ffi.canvasModel.updateScale(_scale, d.localPosition);
+      // ffi.canvasModel.panX(d.localPosition.dx);
+      // ffi.canvasModel.panY(d.localPosition.dy);
+    } else if (_tapCount == 3) {
+      _scale -= 0.1;
+      ffi.canvasModel.updateScale(_scale, d.localPosition);
+      // ffi.canvasModel.panX(d.localPosition.dx);
+      // ffi.canvasModel.panY(d.localPosition.dy);
+    }
+
     if (isNotTouchBasedDevice()) {
       return;
     }
