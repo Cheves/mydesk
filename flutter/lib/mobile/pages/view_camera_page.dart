@@ -309,6 +309,7 @@ class _ViewCameraPageState extends State<ViewCameraPage>
     return BottomAppBar(
       elevation: 10,
       color: MyTheme.accent,
+      height: 0.1,
       child: Row(
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
