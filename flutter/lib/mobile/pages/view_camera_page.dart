@@ -306,10 +306,12 @@ class _ViewCameraPageState extends State<ViewCameraPage>
   }
 
   Widget getBottomAppBar() {
-    return BottomAppBar(
+    return Visibility(
+    visible: false,
+    maintainSize: false,
+    child:  BottomAppBar(
       elevation: 10,
       color: MyTheme.accent,
-      height: 0.1,
       child: Row(
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -372,7 +374,7 @@ class _ViewCameraPageState extends State<ViewCameraPage>
               )),
         ],
       ),
-    );
+    ));
   }
 
   Widget getBodyForMobile() {
