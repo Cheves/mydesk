@@ -117,6 +117,7 @@ class _RawTouchGestureDetectorRegionState
   int _tapCount = 0;
   DateTime? _lastTapTime;
   final int _tapTimeout = 500; // 点击超时时间（毫秒）
+  bool isFirstTap = true;
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +158,11 @@ class _RawTouchGestureDetectorRegionState
     _lastTapDownDetails = null;
     if (isNotTouchBasedDevice()) {
       return;
+    }
+    if (isFirstTap){
+      _scale = 0.7;
+      ffi.canvasModel.updateScale(_scale, d.localPosition);
+      isFirstTap = false;
     }
     if (handleTouch) {
       final isMoved =
