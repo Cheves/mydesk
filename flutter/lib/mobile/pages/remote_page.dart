@@ -398,22 +398,23 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
                       }
                     });
                   }),
-          bottomNavigationBar: Obx(() => Stack(
-                alignment: Alignment.bottomCenter,
-                children: [
-                  gFFI.ffiModel.pi.isSet.isTrue &&
-                          gFFI.ffiModel.waitForFirstImage.isTrue
-                      ? emptyOverlay(MyTheme.canvasColor)
-                      : () {
-                          gFFI.ffiModel.tryShowAndroidActionsOverlay();
-                          return Offstage();
-                        }(),
-                  _bottomWidget(),
-                  gFFI.ffiModel.pi.isSet.isFalse
-                      ? emptyOverlay(MyTheme.canvasColor)
-                      : Offstage(),
-                ],
-              )),
+          bottomNavigationBar: null,
+          // bottomNavigationBar: Obx(() => Stack(
+          //       alignment: Alignment.bottomCenter,
+          //       children: [
+          //         gFFI.ffiModel.pi.isSet.isTrue &&
+          //                 gFFI.ffiModel.waitForFirstImage.isTrue
+          //             ? emptyOverlay(MyTheme.canvasColor)
+          //             : () {
+          //                 gFFI.ffiModel.tryShowAndroidActionsOverlay();
+          //                 return Offstage();
+          //               }(),
+          //         _bottomWidget(),
+          //         gFFI.ffiModel.pi.isSet.isFalse
+          //             ? emptyOverlay(MyTheme.canvasColor)
+          //             : Offstage(),
+          //       ],
+          //     )),
           body: Obx(
             () => getRawPointerAndKeyBody(Overlay(
               initialEntries: [
