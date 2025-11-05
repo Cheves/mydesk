@@ -188,59 +188,57 @@ class _RawTouchGestureDetectorRegionState
   onDoubleTapDown(TapDownDetails d) async {
     lastDeviceKind = d.kind;
     //判断连续点击事件
-    // final now = DateTime.now();
-    // // 检查是否在超时时间内
-    // if (_lastTapTime != null && now.difference(_lastTapTime!).inMilliseconds < _tapTimeout) {
-    //   _tapCount++;
-    // } else {
-    //   _tapCount = 1; // 重新开始计数
-    // }
-    // _lastTapTime = now;
-    // // 根据点击次数执行不同操作
-    // if (_tapCount == 2) {
-    //   _scale += 0.1;
-    //   ffi.canvasModel.updateScale(_scale, d.localPosition);
-    //   // ffi.canvasModel.panX(d.localPosition.dx);
-    //   // ffi.canvasModel.panY(d.localPosition.dy);
-    // } else if (_tapCount == 3) {
-    //   _scale -= 0.1;
-    //   ffi.canvasModel.updateScale(_scale, d.localPosition);
-    //   // ffi.canvasModel.panX(d.localPosition.dx);
-    //   // ffi.canvasModel.panY(d.localPosition.dy);
-    // }
+    final now = DateTime.now();
+    // 检查是否在超时时间内
+    if (_lastTapTime != null && now.difference(_lastTapTime!).inMilliseconds < _tapTimeout) {
+      _tapCount++;
+    } else {
+      _tapCount = 1; // 重新开始计数
+    }
+    _lastTapTime = now;
+    // 根据点击次数执行不同操作
+    if (_tapCount == 2) {
+      _scale += 0.1;
+      ffi.canvasModel.updateScale(_scale, d.localPosition);
+      // ffi.canvasModel.panX(d.localPosition.dx);
+      // ffi.canvasModel.panY(d.localPosition.dy);
+    } else if (_tapCount == 3) {
+      _scale -= 0.1;
+      ffi.canvasModel.updateScale(_scale, d.localPosition);
+      // ffi.canvasModel.panX(d.localPosition.dx);
+      // ffi.canvasModel.panY(d.localPosition.dy);
+    }
 
-    // if (isNotTouchBasedDevice()) {
-    //   return;
-    // }
-    // if (handleTouch) {
-    //   _lastPosOfDoubleTapDown = d.localPosition;
-    //   await ffi.cursorModel.move(d.localPosition.dx, d.localPosition.dy);
-    // } else {
-    //   _lastTapDownPositionForMouseMode = d.localPosition;
-    // }
-    _scale += 0.1;
-    ffi.canvasModel.updateScale(_scale, d.localPosition);
+    if (isNotTouchBasedDevice()) {
+      return;
+    }
+    if (handleTouch) {
+      _lastPosOfDoubleTapDown = d.localPosition;
+      // await ffi.cursorModel.move(d.localPosition.dx, d.localPosition.dy);
+    } else {
+      _lastTapDownPositionForMouseMode = d.localPosition;
+    }
   }
 
   onDoubleTap() async {
     if (isNotTouchBasedDevice()) {
       return;
     }
-    // if (ffiModel.touchMode && ffi.cursorModel.lastIsBlocked) {
-    //   return;
-    // }
-    // if (handleTouch &&
-    //     !ffi.cursorModel.isInRemoteRect(_lastPosOfDoubleTapDown)) {
-    //   return;
-    // }
-    // // Check if the position is in a blocked area when using the mouse mode.
-    // if (!handleTouch) {
-    //   if (shouldBlockMouseModeEvent()) {
-    //     return;
-    //   }
-    // }
-    // await inputModel.tap(MouseButtons.left);
-    // await inputModel.tap(MouseButtons.left);
+    if (ffiModel.touchMode && ffi.cursorModel.lastIsBlocked) {
+      return;
+    }
+    if (handleTouch &&
+        !ffi.cursorModel.isInRemoteRect(_lastPosOfDoubleTapDown)) {
+      return;
+    }
+    // Check if the position is in a blocked area when using the mouse mode.
+    if (!handleTouch) {
+      if (shouldBlockMouseModeEvent()) {
+        return;
+      }
+    }
+    await inputModel.tap(MouseButtons.left);
+    await inputModel.tap(MouseButtons.left);
   }
 
   onLongPressDown(LongPressDownDetails d) async {
@@ -248,23 +246,21 @@ class _RawTouchGestureDetectorRegionState
     if (isNotTouchBasedDevice()) {
       return;
     }
-    _scale -= 0.1;
-    ffi.canvasModel.updateScale(_scale, d.localPosition);
-    // if (handleTouch) {
-    //   _lastPosOfDoubleTapDown = d.localPosition;
-    //   _cacheLongPressPosition = d.localPosition;
-    //   if (!ffi.cursorModel.isInRemoteRect(d.localPosition)) {
-    //     return;
-    //   }
-    //   _cacheLongPressPositionTs = DateTime.now().millisecondsSinceEpoch;
-    //   if (ffiModel.isPeerMobile) {
-    //     await ffi.cursorModel
-    //         .move(_cacheLongPressPosition.dx, _cacheLongPressPosition.dy);
-    //     await inputModel.tapDown(MouseButtons.left);
-    //   }
-    // } else {
-    //   _lastTapDownPositionForMouseMode = d.localPosition;
-    // }
+    if (handleTouch) {
+      _lastPosOfDoubleTapDown = d.localPosition;
+      _cacheLongPressPosition = d.localPosition;
+      if (!ffi.cursorModel.isInRemoteRect(d.localPosition)) {
+        return;
+      }
+      _cacheLongPressPositionTs = DateTime.now().millisecondsSinceEpoch;
+      if (ffiModel.isPeerMobile) {
+        await ffi.cursorModel
+            .move(_cacheLongPressPosition.dx, _cacheLongPressPosition.dy);
+        await inputModel.tapDown(MouseButtons.left);
+      }
+    } else {
+      _lastTapDownPositionForMouseMode = d.localPosition;
+    }
   }
 
   onLongPressUp() async {
