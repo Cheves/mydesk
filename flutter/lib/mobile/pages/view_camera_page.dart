@@ -239,22 +239,23 @@ class _ViewCameraPageState extends State<ViewCameraPage>
                       }
                     });
                   }),
-          bottomNavigationBar: Obx(() => Stack(
-                alignment: Alignment.bottomCenter,
-                children: [
-                  gFFI.ffiModel.pi.isSet.isTrue &&
-                          gFFI.ffiModel.waitForFirstImage.isTrue
-                      ? emptyOverlay(MyTheme.canvasColor)
-                      : () {
-                          gFFI.ffiModel.tryShowAndroidActionsOverlay();
-                          return Offstage();
-                        }(),
-                  _bottomWidget(),
-                  gFFI.ffiModel.pi.isSet.isFalse
-                      ? emptyOverlay(MyTheme.canvasColor)
-                      : Offstage(),
-                ],
-              )),
+          bottomNavigationBar: null,
+          // bottomNavigationBar: Obx(() => Stack(
+          //       alignment: Alignment.bottomCenter,
+          //       children: [
+          //         gFFI.ffiModel.pi.isSet.isTrue &&
+          //                 gFFI.ffiModel.waitForFirstImage.isTrue
+          //             ? emptyOverlay(MyTheme.canvasColor)
+          //             : () {
+          //                 gFFI.ffiModel.tryShowAndroidActionsOverlay();
+          //                 return Offstage();
+          //               }(),
+          //         _bottomWidget(),
+          //         gFFI.ffiModel.pi.isSet.isFalse
+          //             ? emptyOverlay(MyTheme.canvasColor)
+          //             : Offstage(),
+          //       ],
+          //     )),
           body: Obx(
             () => getRawPointerAndKeyBody(Overlay(
               initialEntries: [
@@ -306,10 +307,7 @@ class _ViewCameraPageState extends State<ViewCameraPage>
   }
 
   Widget getBottomAppBar() {
-    return Visibility(
-    visible: false,
-    maintainSize: false,
-    child:  BottomAppBar(
+    return BottomAppBar(
       elevation: 10,
       color: MyTheme.accent,
       child: Row(
@@ -374,7 +372,7 @@ class _ViewCameraPageState extends State<ViewCameraPage>
               )),
         ],
       ),
-    ));
+    );
   }
 
   Widget getBodyForMobile() {
