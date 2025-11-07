@@ -122,7 +122,7 @@ class _RawTouchGestureDetectorRegionState
   @override
   Widget build(BuildContext context) {
     Offset point = Offset(50.0, 50.0);
-    ffi.canvasModel.updateScale(0.8, point);
+    ffi.canvasModel.updateScale(0.9, point);
     return RawGestureDetector(
       child: widget.child,
       gestures: makeGestures(context),

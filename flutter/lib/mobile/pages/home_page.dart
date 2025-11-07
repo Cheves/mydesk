@@ -42,6 +42,7 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    MyTheme.changeDarkMode(ThemeMode.dark);
     initPages();
   }
 
