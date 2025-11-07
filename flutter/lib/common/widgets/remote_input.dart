@@ -121,6 +121,8 @@ class _RawTouchGestureDetectorRegionState
 
   @override
   Widget build(BuildContext context) {
+    Offset point = Offset(50.0, 50.0);
+    ffi.canvasModel.updateScale(0.8, point);
     return RawGestureDetector(
       child: widget.child,
       gestures: makeGestures(context),
@@ -159,11 +161,11 @@ class _RawTouchGestureDetectorRegionState
     if (isNotTouchBasedDevice()) {
       return;
     }
-    if (isFirstTap){
-      _scale = 0.7;
+    // if (isFirstTap){
+    //   _scale = 0.7;
       ffi.canvasModel.updateScale(_scale, d.localPosition);
-      isFirstTap = false;
-    }
+    //   isFirstTap = false;
+    // }
     if (handleTouch) {
       final isMoved =
           await ffi.cursorModel.move(d.localPosition.dx, d.localPosition.dy);
@@ -193,27 +195,27 @@ class _RawTouchGestureDetectorRegionState
 
   onDoubleTapDown(TapDownDetails d) async {
     lastDeviceKind = d.kind;
-    //判断连续点击事件
-    final now = DateTime.now();
-    // 检查是否在超时时间内
-    if (_lastTapTime != null && now.difference(_lastTapTime!).inMilliseconds < _tapTimeout) {
-      _tapCount++;
-    } else {
-      _tapCount = 1; // 重新开始计数
-    }
-    _lastTapTime = now;
-    // 根据点击次数执行不同操作
-    if (_tapCount == 2) {
-      _scale += 0.1;
-      ffi.canvasModel.updateScale(_scale, d.localPosition);
-      // ffi.canvasModel.panX(d.localPosition.dx);
-      // ffi.canvasModel.panY(d.localPosition.dy);
-    } else if (_tapCount == 3) {
-      _scale -= 0.1;
-      ffi.canvasModel.updateScale(_scale, d.localPosition);
-      // ffi.canvasModel.panX(d.localPosition.dx);
-      // ffi.canvasModel.panY(d.localPosition.dy);
-    }
+    // //判断连续点击事件
+    // final now = DateTime.now();
+    // // 检查是否在超时时间内
+    // if (_lastTapTime != null && now.difference(_lastTapTime!).inMilliseconds < _tapTimeout) {
+    //   _tapCount++;
+    // } else {
+    //   _tapCount = 1; // 重新开始计数
+    // }
+    // _lastTapTime = now;
+    // // 根据点击次数执行不同操作
+    // if (_tapCount == 2) {
+    //   _scale += 0.1;
+    //   ffi.canvasModel.updateScale(_scale, d.localPosition);
+    //   // ffi.canvasModel.panX(d.localPosition.dx);
+    //   // ffi.canvasModel.panY(d.localPosition.dy);
+    // } else if (_tapCount == 3) {
+    //   _scale -= 0.1;
+    //   ffi.canvasModel.updateScale(_scale, d.localPosition);
+    //   // ffi.canvasModel.panX(d.localPosition.dx);
+    //   // ffi.canvasModel.panY(d.localPosition.dy);
+    // }
 
     if (isNotTouchBasedDevice()) {
       return;
