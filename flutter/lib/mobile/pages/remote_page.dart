@@ -469,6 +469,20 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
     );
   }
 
+  // 放大界面
+  void zoomIn() {
+    final size = MediaQuery.of(context).size;
+    final focalPoint = Offset(size.width / 2, size.height / 2);
+    gFFI.canvasModel.updateScale(1.2, focalPoint);
+  }
+
+  // 缩小界面
+  void zoomOut() {
+    final size = MediaQuery.of(context).size;
+    final focalPoint = Offset(size.width / 2, size.height / 2);
+    gFFI.canvasModel.updateScale(0.8, focalPoint);
+  }
+
   Widget getBottomAppBar() {
     final ffiModel = Provider.of<FfiModel>(context);
     return BottomAppBar(
@@ -493,6 +507,20 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
                       onPressed: () {
                         setState(() => _showEdit = false);
                         showOptions(context, widget.id, gFFI.dialogManager);
+                      },
+                    ),
+                    IconButton(
+                      color: Colors.white,
+                      icon: Icon(Icons.zoom_in),
+                      onPressed: () {
+                        zoomIn();
+                      },
+                    ),
+                    IconButton(
+                      color: Colors.white,
+                      icon: Icon(Icons.zoom_out),
+                      onPressed: () {
+                        zoomOut();
                       },
                     )
                   ] +

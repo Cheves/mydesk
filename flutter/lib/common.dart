@@ -599,6 +599,16 @@ class MyTheme {
 
   static ThemeMode currentThemeMode() {
     final preference = getThemeModePreference();
+    // Android 上默认使用 dark 模式
+    if (isAndroid) {
+      // 如果用户明确设置为 light，则使用 light
+      if (preference == ThemeMode.light) {
+        return ThemeMode.light;
+      }
+      // 其他情况（system 或 dark 或未设置）默认使用 dark
+      return ThemeMode.dark;
+    }
+    // 其他平台保持原有逻辑
     if (preference == ThemeMode.system) {
       if (WidgetsBinding.instance.platformDispatcher.platformBrightness ==
           Brightness.light) {
@@ -626,6 +636,10 @@ class MyTheme {
       case "dark":
         return ThemeMode.dark;
       default:
+        // Android 上默认使用 dark 模式
+        if (isAndroid) {
+          return ThemeMode.dark;
+        }
         return ThemeMode.system;
     }
   }
