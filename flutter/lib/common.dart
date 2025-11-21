@@ -3871,6 +3871,10 @@ void earlyAssert() {
 }
 
 void checkUpdate() {
+  // Android 端禁用版本更新检查
+  if (isAndroid) {
+    return;
+  }
   if (!isWeb) {
     if (!bind.isCustomClient()) {
       platformFFI.registerEventHandler(
