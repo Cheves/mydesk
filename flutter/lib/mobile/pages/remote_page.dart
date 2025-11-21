@@ -472,14 +472,14 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
   void zoomIn() {
     final size = MediaQuery.of(context).size;
     final focalPoint = Offset(size.width / 2, size.height / 2);
-    gFFI.canvasModel.updateScale(1.2, focalPoint);
+    gFFI.canvasModel.updateScale(1.1, focalPoint); // 每次放大 10%
   }
 
   // 缩小界面
   void zoomOut() {
     final size = MediaQuery.of(context).size;
     final focalPoint = Offset(size.width / 2, size.height / 2);
-    gFFI.canvasModel.updateScale(0.8, focalPoint);
+    gFFI.canvasModel.updateScale(0.9, focalPoint); // 每次缩小 10%
   }
 
   Widget getBottomAppBar() {
