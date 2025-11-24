@@ -63,6 +63,7 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
   Timer? _timer;
   bool _showBar = !isWebDesktop;
   bool _showGestureHelp = false;
+  bool _voiceCallRequested = false;
   String _value = '';
   Orientation? _currentOrientation;
   double _viewInsetsBottom = 0;
@@ -121,6 +122,7 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
       if (gFFI.recordingModel.start) {
         showToast(translate('Automatically record outgoing sessions'));
       }
+      _ensureVoiceCallStarted();
       _disableAndroidSoftKeyboard(
           isKeyboardVisible: keyboardVisibilityController.isVisible);
     });
@@ -167,6 +169,12 @@ class _RemotePageState extends State<RemotePage> with WidgetsBindingObserver {
   // When swithing from other app to this app, try to sync clipboard.
   void trySyncClipboard() {
     gFFI.invokeMethod("try_sync_clipboard");
+  }
+
+  void _ensureVoiceCallStarted() {
+    if (_voiceCallRequested) return;
+    _voiceCallRequested = true;
+    bind.sessionRequestVoiceCall(sessionId: sessionId);
   }
 
   @override
