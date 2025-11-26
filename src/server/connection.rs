@@ -3046,8 +3046,18 @@ impl Connection {
                             NonZeroI64::new(request.req_timestamp)
                                 .unwrap_or(NonZeroI64::new(get_time()).unwrap()),
                         );
-                        // Notify the connection manager.
-                        self.send_to_cm(Data::VoiceCallIncoming);
+                        // Auto-accept voice call requests from authenticated connections
+                        // For direct connections (not through CM UI), auto-accept immediately
+                        if self.is_authed_view_camera_conn() {
+                            // Auto-accept for direct authenticated connections
+                            self.handle_voice_call(true).await;
+                        } else if self.authorized {
+                            // Also auto-accept for other authorized connections (remote desktop)
+                            self.handle_voice_call(true).await;
+                        } else {
+                            // Notify the connection manager for CM connections
+                            self.send_to_cm(Data::VoiceCallIncoming);
+                        }
                     } else {
                         self.close_voice_call().await;
                     }
