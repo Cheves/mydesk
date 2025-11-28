@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hbb/common.dart';
 import 'package:flutter_hbb/models/model.dart';
+import 'package:get/get.dart';
 
 const double _kDragBallSize = 48.0;
 const double _kSpaceToEdge = 20.0;
@@ -33,21 +34,44 @@ class _FloatingDragBallState extends State<FloatingDragBall> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _resetPosition();
+      if (mounted) {
+        _resetPosition();
+      }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized && mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _resetPosition();
+        }
+      });
+    }
   }
 
   void _resetPosition() {
     if (!mounted) return;
-    setState(() {
+    try {
       final size = MediaQuery.of(context).size;
       // 默认位置：右下角
-      _position = Offset(
-        size.width - _kDragBallSize - _kSpaceToEdge,
-        size.height - _kDragBallSize - _kSpaceToEdge,
-      );
-      _isInitialized = true;
-    });
+      setState(() {
+        _position = Offset(
+          size.width - _kDragBallSize - _kSpaceToEdge,
+          size.height - _kDragBallSize - _kSpaceToEdge,
+        );
+        _isInitialized = true;
+      });
+    } catch (e) {
+      // 如果 context 不可用，延迟重试
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _resetPosition();
+        }
+      });
+    }
   }
 
   void _onPanStart(DragStartDetails details) {
@@ -95,12 +119,44 @@ class _FloatingDragBallState extends State<FloatingDragBall> {
 
   @override
   Widget build(BuildContext context) {
-    // 仅在安卓端且控制非移动设备时显示
-    if (!isAndroid || _ffiModel.isPeerMobile || !_isInitialized) {
-      return Offstage();
-    }
+    // 使用 Obx 响应状态变化
+    return Obx(() {
+      // 仅在安卓端显示
+      if (!isAndroid) {
+        return Offstage();
+      }
+      
+      // 等待连接建立
+      if (!_ffiModel.pi.isSet.value) {
+        return Offstage();
+      }
+      
+      // 控制移动设备时不显示
+      if (_ffiModel.isPeerMobile) {
+        return Offstage();
+      }
+      
+      // 如果还没初始化，先初始化
+      if (!_isInitialized) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _resetPosition();
+          }
+        });
+        return Offstage();
+      }
 
-    return Positioned(
+      final size = MediaQuery.of(context).size;
+      // 确保位置有效
+      if (_position.dx == 0 && _position.dy == 0 && size.width > 0 && size.height > 0) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _resetPosition();
+          }
+        });
+      }
+
+      return Positioned(
       left: _position.dx,
       top: _position.dy,
       child: GestureDetector(
@@ -134,6 +190,7 @@ class _FloatingDragBallState extends State<FloatingDragBall> {
         ),
       ),
     );
+    });
   }
 }
 
