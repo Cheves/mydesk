@@ -108,6 +108,12 @@ class _RawTouchGestureDetectorRegionState
   // So we need to cache the last tap down position.
   Offset? _lastTapDownPositionForMouseMode;
 
+  // 用于拖动画布的变量
+  bool _isCanvasDragging = false;
+  Offset? _canvasDragStartPosition;
+  static const double _kEdgeThreshold = 50.0; // 边缘区域阈值（像素）
+  static const double _kCanvasDragThreshold = 10.0; // 拖动阈值，超过此距离才开始平移画布
+
   FFI get ffi => widget.ffi;
   FfiModel get ffiModel => widget.ffiModel;
   InputModel get inputModel => widget.inputModel;
@@ -379,6 +385,23 @@ class _RawTouchGestureDetectorRegionState
     if (isNotTouchBasedDevice()) {
       return;
     }
+    
+    // 安卓端：检查是否在屏幕边缘区域，用于拖动画布
+    if (isAndroid && handleTouch && !ffiModel.isPeerMobile) {
+      final size = MediaQueryData.fromView(View.of(context)).size;
+      final isNearEdge = d.localPosition.dx < _kEdgeThreshold ||
+          d.localPosition.dx > size.width - _kEdgeThreshold ||
+          d.localPosition.dy < _kEdgeThreshold ||
+          d.localPosition.dy > size.height - _kEdgeThreshold;
+      
+      if (isNearEdge) {
+        // 在边缘区域，准备拖动画布
+        _isCanvasDragging = false;
+        _canvasDragStartPosition = d.localPosition;
+        return; // 不执行鼠标拖动逻辑
+      }
+    }
+    
     if (handleTouch) {
       if (lastTapDownDetails != null) {
         await ffi.cursorModel.move(lastTapDownDetails.localPosition.dx,
@@ -425,6 +448,25 @@ class _RawTouchGestureDetectorRegionState
     if (isNotTouchBasedDevice()) {
       return;
     }
+    
+    // 安卓端：拖动画布模式
+    if (isAndroid && handleTouch && !ffiModel.isPeerMobile && _canvasDragStartPosition != null) {
+      // 计算拖动距离
+      final dragDistance = (d.localPosition - _canvasDragStartPosition!).distance;
+      
+      // 如果拖动距离超过阈值，进入画布拖动模式
+      if (dragDistance > _kCanvasDragThreshold) {
+        if (!_isCanvasDragging) {
+          _isCanvasDragging = true;
+        }
+        // 平移画布
+        ffi.canvasModel.panX(d.delta.dx);
+        ffi.canvasModel.panY(d.delta.dy);
+        return; // 不执行鼠标拖动逻辑
+      }
+      return; // 拖动距离不够，不执行任何操作
+    }
+    
     if (ffi.cursorModel.shouldBlock(d.localPosition.dx, d.localPosition.dy)) {
       return;
     }
@@ -435,6 +477,13 @@ class _RawTouchGestureDetectorRegionState
   }
 
   onOneFingerPanEnd(DragEndDetails d) async {
+    // 重置画布拖动状态
+    if (_isCanvasDragging) {
+      _isCanvasDragging = false;
+      _canvasDragStartPosition = null;
+      return; // 画布拖动模式，不执行鼠标操作
+    }
+    
     _touchModePanStarted = false;
     if (isNotTouchBasedDevice()) {
       return;
