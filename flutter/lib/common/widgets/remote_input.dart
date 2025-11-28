@@ -111,8 +111,7 @@ class _RawTouchGestureDetectorRegionState
   // 用于拖动画布的变量
   bool _isCanvasDragging = false;
   Offset? _canvasDragStartPosition;
-  static const double _kEdgeThreshold = 50.0; // 边缘区域阈值（像素）
-  static const double _kCanvasDragThreshold = 10.0; // 拖动阈值，超过此距离才开始平移画布
+  static const double _kCanvasDragThreshold = 15.0; // 拖动阈值，超过此距离才开始平移画布（避免误触）
 
   FFI get ffi => widget.ffi;
   FfiModel get ffiModel => widget.ffiModel;
@@ -386,20 +385,13 @@ class _RawTouchGestureDetectorRegionState
       return;
     }
     
-    // 安卓端：检查是否在屏幕边缘区域，用于拖动画布
+    // 安卓端：在整个屏幕区域都可以拖动画布
     if (isAndroid && handleTouch && !ffiModel.isPeerMobile) {
-      final size = MediaQueryData.fromView(View.of(context)).size;
-      final isNearEdge = d.localPosition.dx < _kEdgeThreshold ||
-          d.localPosition.dx > size.width - _kEdgeThreshold ||
-          d.localPosition.dy < _kEdgeThreshold ||
-          d.localPosition.dy > size.height - _kEdgeThreshold;
-      
-      if (isNearEdge) {
-        // 在边缘区域，准备拖动画布
-        _isCanvasDragging = false;
-        _canvasDragStartPosition = d.localPosition;
-        return; // 不执行鼠标拖动逻辑
-      }
+      // 初始化画布拖动状态
+      _isCanvasDragging = false;
+      _canvasDragStartPosition = d.localPosition;
+      // 不执行原有的鼠标拖动逻辑，由 onOneFingerPanUpdate 决定是拖动画布还是操作鼠标
+      return;
     }
     
     if (handleTouch) {
@@ -449,9 +441,9 @@ class _RawTouchGestureDetectorRegionState
       return;
     }
     
-    // 安卓端：拖动画布模式
+    // 安卓端：拖动画布模式（整个屏幕区域）
     if (isAndroid && handleTouch && !ffiModel.isPeerMobile && _canvasDragStartPosition != null) {
-      // 计算拖动距离
+      // 计算从拖动开始位置到当前位置的总距离
       final dragDistance = (d.localPosition - _canvasDragStartPosition!).distance;
       
       // 如果拖动距离超过阈值，进入画布拖动模式
@@ -459,14 +451,16 @@ class _RawTouchGestureDetectorRegionState
         if (!_isCanvasDragging) {
           _isCanvasDragging = true;
         }
-        // 平移画布
+        // 平移画布（上下左右）
         ffi.canvasModel.panX(d.delta.dx);
         ffi.canvasModel.panY(d.delta.dy);
         return; // 不执行鼠标拖动逻辑
       }
-      return; // 拖动距离不够，不执行任何操作
+      // 拖动距离不够阈值，暂时不执行任何操作，等待更多拖动
+      return;
     }
     
+    // 原有逻辑：非安卓端或控制移动设备时
     if (ffi.cursorModel.shouldBlock(d.localPosition.dx, d.localPosition.dy)) {
       return;
     }
