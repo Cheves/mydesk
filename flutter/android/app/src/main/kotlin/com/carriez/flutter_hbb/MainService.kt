@@ -423,12 +423,17 @@ class MainService : Service() {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Use microphone for speech-to-text use case
+            // The audio will be captured from phone's microphone and sent to PC
             if (!audioRecordHandle.createAudioRecorder(false, mediaProjection)) {
-                Log.d(logTag, "createAudioRecorder fail")
+                Log.e(logTag, "createAudioRecorder fail, SDK_INT:${Build.VERSION.SDK_INT}")
             } else {
-                Log.d(logTag, "audio recorder start")
+                Log.d(logTag, "audio recorder created successfully (using microphone)")
                 audioRecordHandle.startAudioRecorder()
+                Log.d(logTag, "audio recorder started successfully")
             }
+        } else {
+            Log.w(logTag, "Audio recording requires Android R (API 30) or higher, current SDK:${Build.VERSION.SDK_INT}")
         }
         checkMediaPermission()
         _isStart = true

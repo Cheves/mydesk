@@ -48,8 +48,17 @@ class AudioRecordHandle(private var context: Context, private var isVideoStart: 
                 .setChannelMask(AUDIO_CHANNEL_MASK).build()
         );
         if (inVoiceCall) {
+            // Use microphone for voice call
             builder.setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
+            Log.d(logTag, "Using microphone (VOICE_COMMUNICATION) for voice call")
         } else {
+            // Use microphone for speech-to-text use case
+            // Change to system audio by uncommenting the code below and commenting out the microphone line
+            builder.setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION)
+            Log.d(logTag, "Using microphone (VOICE_COMMUNICATION) for speech-to-text")
+            
+            // Uncomment below to use system audio instead of microphone:
+            /*
             mediaProjection?.let {
                 var apcc = AudioPlaybackCaptureConfiguration.Builder(it)
                 .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
@@ -57,14 +66,21 @@ class AudioRecordHandle(private var context: Context, private var isVideoStart: 
                 .addMatchingUsage(AudioAttributes.USAGE_GAME)
                 .addMatchingUsage(AudioAttributes.USAGE_UNKNOWN).build();
                 builder.setAudioPlaybackCaptureConfig(apcc);
+                Log.d(logTag, "Using system audio playback capture")
             } ?: let {
                 Log.d(logTag, "createAudioRecorder failed, mediaProjection null")
                 return false
             }
+            */
         }
-        audioRecorder = builder.build()
-        Log.d(logTag, "createAudioRecorder done,minBufferSize:$minBufferSize")
-        return true
+        try {
+            audioRecorder = builder.build()
+            Log.d(logTag, "createAudioRecorder done, audioSource:${if (inVoiceCall) "VOICE_COMMUNICATION" else "VOICE_COMMUNICATION (microphone)"}, minBufferSize:$minBufferSize")
+            return true
+        } catch (e: Exception) {
+            Log.e(logTag, "createAudioRecorder failed with exception: ${e.message}", e)
+            return false
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
