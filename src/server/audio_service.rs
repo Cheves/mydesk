@@ -17,6 +17,7 @@ use super::*;
 use hbb_common::anyhow::anyhow;
 use magnum_opus::{Application::*, Channels::*, Encoder};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::collections::VecDeque;
 
 pub const NAME: &'static str = "audio";
 pub const AUDIO_DATA_SIZE_U8: usize = 960 * 4; // 10ms in 48000 stereo
@@ -24,6 +25,12 @@ static RESTARTING: AtomicBool = AtomicBool::new(false);
 
 lazy_static::lazy_static! {
     static ref VOICE_CALL_INPUT_DEVICE: Arc::<Mutex::<Option<String>>> = Default::default();
+    // 播放音频缓冲区，用于回声消除
+    // 存储最近播放的音频数据（最多保存约1000ms的音频，48000采样率下约48000个样本）
+    // 增加缓冲区大小以处理更大的延迟
+    static ref PLAYBACK_BUFFER: Arc::<Mutex::<VecDeque<f32>>> = Arc::new(Mutex::new(VecDeque::with_capacity(48000)));
+    // 标记是否有播放音频（用于快速判断）
+    static ref HAS_PLAYBACK_AUDIO: Arc::<Mutex::<bool>> = Arc::new(Mutex::new(false));
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "android")))]
@@ -466,7 +473,74 @@ const MAX_AUDIO_ZERO_COUNT: u16 = 800;
 static mut AUDIO_ZERO_COUNT: u16 = 0;
 
 fn send_f32(data: &[f32], encoder: &mut Encoder, sp: &GenericService) {
-    if data.iter().filter(|x| **x != 0.).next().is_some() {
+    // 回声消除：最激进的方法
+    // 策略：如果有播放音频，直接抑制输入音频（设置为静音）
+    let mut processed_data = data.to_vec();
+    let mut should_suppress = false;
+    
+    {
+        let has_playback = *HAS_PLAYBACK_AUDIO.lock().unwrap();
+        let mut playback_buf = PLAYBACK_BUFFER.lock().unwrap();
+        
+        // 如果检测到有播放音频，直接抑制输入音频
+        if has_playback {
+            // 计算输入音频的能量
+            let mut input_energy = 0.0;
+            for i in 0..data.len() {
+                input_energy += data[i] * data[i];
+            }
+            
+            // 如果有输入音频（能量>阈值），说明可能有音频输入
+            if input_energy > 0.0001 {
+                // 计算播放音频的能量（从缓冲区开头开始）
+                let mut playback_energy = 0.0;
+                let check_len = playback_buf.len().min(data.len());
+                
+                if check_len > 0 {
+                    for i in 0..check_len {
+                        playback_energy += playback_buf[i] * playback_buf[i];
+                    }
+                }
+                
+                // 如果有播放音频，直接抑制输入音频
+                // 使用最激进的策略：只要有播放音频，就抑制输入音频
+                if playback_energy > 0.0001 {
+                    should_suppress = true;
+                    processed_data.fill(0.0);
+                    log::debug!("Suppressing input audio: input_energy={:.6}, playback_energy={:.6}", input_energy, playback_energy);
+                }
+                
+                // 移除已使用的播放音频数据（如果有足够的数据）
+                if playback_buf.len() >= data.len() {
+                    playback_buf.drain(0..data.len());
+                } else if playback_buf.len() > 0 {
+                    playback_buf.clear(); // 如果数据不足，清空缓冲区
+                }
+            } else {
+                // 输入音频能量很小，移除已使用的播放音频数据
+                if playback_buf.len() >= data.len() {
+                    playback_buf.drain(0..data.len());
+                }
+            }
+        } else if playback_buf.len() > 0 {
+            // 如果播放缓冲区数据不足但非空，仍然尝试抑制
+            let available_len = playback_buf.len().min(data.len());
+            let mut playback_energy = 0.0;
+            for i in 0..available_len {
+                playback_energy += playback_buf[i] * playback_buf[i];
+            }
+            
+            if playback_energy > 0.0001 {
+                // 有播放音频，抑制对应部分的输入
+                for i in 0..available_len {
+                    processed_data[i] = 0.0;
+                }
+            }
+            playback_buf.drain(0..available_len);
+        }
+    }
+    
+    if processed_data.iter().filter(|x| **x != 0.).next().is_some() {
         unsafe {
             AUDIO_ZERO_COUNT = 0;
         }
@@ -488,12 +562,12 @@ fn send_f32(data: &[f32], encoder: &mut Encoder, sp: &GenericService) {
         // if data size is bigger than BATCH_SIZE, AND is an integer multiple of BATCH_SIZE
         // then upload in batches
         const BATCH_SIZE: usize = 960;
-        let input_size = data.len();
+        let input_size = processed_data.len();
         if input_size > BATCH_SIZE && input_size % BATCH_SIZE == 0 {
             let n = input_size / BATCH_SIZE;
             for i in 0..n {
                 match encoder
-                    .encode_vec_float(&data[i * BATCH_SIZE..(i + 1) * BATCH_SIZE], BATCH_SIZE)
+                    .encode_vec_float(&processed_data[i * BATCH_SIZE..(i + 1) * BATCH_SIZE], BATCH_SIZE)
                 {
                     Ok(data) => {
                         let mut msg_out = Message::new();
@@ -513,7 +587,7 @@ fn send_f32(data: &[f32], encoder: &mut Encoder, sp: &GenericService) {
     }
 
     #[cfg(not(target_os = "android"))]
-    match encoder.encode_vec_float(data, data.len() * 6) {
+    match encoder.encode_vec_float(&processed_data, processed_data.len() * 6) {
         Ok(data) => {
             let mut msg_out = Message::new();
             msg_out.set_audio_frame(AudioFrame {
@@ -523,5 +597,36 @@ fn send_f32(data: &[f32], encoder: &mut Encoder, sp: &GenericService) {
             sp.send(msg_out);
         }
         Err(_) => {}
+    }
+}
+
+/// 记录播放的音频数据，用于回声消除
+pub fn record_playback_audio(data: &[f32]) {
+    let mut playback_buf = PLAYBACK_BUFFER.lock().unwrap();
+    // 检查是否有有效的音频数据（非零）
+    let has_audio = data.iter().any(|&x| x.abs() > 0.001);
+    
+    // 更新播放音频标记
+    if has_audio {
+        *HAS_PLAYBACK_AUDIO.lock().unwrap() = true;
+    }
+    
+    // 将播放的音频数据添加到缓冲区
+    for &sample in data {
+        playback_buf.push_back(sample);
+        // 限制缓冲区大小，保持约1000ms的音频数据（48000采样率下约48000个样本）
+        if playback_buf.len() > 48000 {
+            playback_buf.pop_front();
+        }
+    }
+    
+    // 定期记录调试信息（每100次调用记录一次）
+    static mut CALL_COUNT: u32 = 0;
+    unsafe {
+        CALL_COUNT += 1;
+        if CALL_COUNT % 100 == 0 && has_audio {
+            log::debug!("Recorded playback audio: {} samples, buffer size: {}, has_playback: {}", 
+                       data.len(), playback_buf.len(), has_audio);
+        }
     }
 }

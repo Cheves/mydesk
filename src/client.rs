@@ -36,6 +36,8 @@ use crate::{
     ui_interface::{get_builtin_option, use_texture_render},
     ui_session_interface::{InvokeUiSession, Session},
 };
+#[cfg(not(any(target_os = "android", target_os = "ios")))]
+use crate::server::audio_service;
 #[cfg(feature = "unix-file-copy-paste")]
 use crate::{clipboard::check_clipboard_files, clipboard_file::unix_file_clip};
 pub use file_trait::FileManager;
@@ -1449,6 +1451,12 @@ impl AudioHandler {
                 }
                 #[cfg(target_os = "linux")]
                 {
+                    // 记录播放的音频数据，用于回声消除
+                    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                    {
+                        use crate::server::audio_service;
+                        audio_service::record_playback_audio(&buffer[0..n]);
+                    }
                     let data_u8 =
                         unsafe { std::slice::from_raw_parts::<u8>(buffer.as_ptr() as _, n * 4) };
                     self.simple.as_mut().map(|x| x.write(data_u8));
@@ -1515,6 +1523,13 @@ impl AudioHandler {
                     lock.pop_slice(&mut elems);
                 }
                 drop(lock);
+
+                // 记录播放的音频数据，用于回声消除
+                // 注意：只记录实际有数据的部分（n个样本）
+                #[cfg(not(any(target_os = "android", target_os = "ios")))]
+                if !elems.is_empty() {
+                    audio_service::record_playback_audio(&elems);
+                }
 
                 let mut input = elems.into_iter();
                 for sample in data.iter_mut() {
